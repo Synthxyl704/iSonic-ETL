@@ -1,10 +1,13 @@
-<img width="1921" height="1022" alt="image" src="https://github.com/user-attachments/assets/6f39e64b-e293-43ab-a61e-99574261b670" /># iSonic - audio ETL program
+# iSonic - audio ETL program
 Nothing fancy, just a simple intermediate ETL-type program for converting youtube, soundcloud & more playlists and videos to audio file formats set to your directory. <br>
 <hr>
 
 > [!NOTE]
 > This program is mostly done with what it is supposed to do, please do message me bugs/any tweaks to make, if I am alive I will definitely respond to you back. <br>
-> Some more fun features will still be added as passion features because I honestly had a lot of fun making this. <br>
+> Some more fun features will still be added as passion features because I honestly had a lot of fun making this. <br>\
+
+
+<hr>
 
 <img width="1921" height="1022" alt="image" src="https://github.com/user-attachments/assets/ae5fd41b-1789-4841-ba46-e337b4edf007" />
 
