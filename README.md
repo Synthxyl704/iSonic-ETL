@@ -21,19 +21,19 @@ git clone https://github.com/Synthxyl704/iSonic-ETL
 
 CMake guide (simple, execute sequentially if you wish to)
 ```
--> cd <directory of storage>
--> mkdir build
--> cd build
--> cmake ..
--> make
--> <execute target main file, may be different than just "main">
+cd <directory of storage>
+mkdir build
+cd build
+cmake ..
+make
+./argvmain
 ```
 
-Terminal compilation guide:
+Terminal compilation guide (no build directory):
 ```
--> cd <directory of storage>
--> g++ -I. -Iheaders src/argvmain.cpp src/audio_utilities.cpp src/dependency.cpp src/url_utilities.cpp src/file_manager.cpp src/song_manager.cpp src/metadata.cpp src/usage_helper.cpp -o argvmain
--> ./main <link_to_youtube_urlL> <audio_file_format>
+cd <directory of storage>
+g++ -I. -Iheaders src/argvmain.cpp src/audio_utilities.cpp src/dependency.cpp src/url_utilities.cpp src/file_manager.cpp src/song_manager.cpp src/metadata.cpp src/usage_helper.cpp -o argvmain
+./main <link_to_youtube_urlL> <audio_file_format>
 ```
 
 ## Commands usage exposition:
