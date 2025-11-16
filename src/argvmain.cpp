@@ -15,7 +15,7 @@
 #include "headers/metadata.h"
 #include "headers/usage_helper.h"
 #include "headers/queue_manager.h"
-#include "headers/audio_preview.h"
+// #include "headers/audio_preview.h"
 
 #define MAX_PRO_SEARCH_LIST_INT_SIZE 4
 
