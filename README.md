@@ -32,7 +32,7 @@ make
 Terminal compilation guide (no build directory):
 ```
 cd <directory of storage>
-g++ -I. -Iheaders src/argvmain.cpp src/audio_utilities.cpp src/dependency.cpp src/url_utilities.cpp src/file_manager.cpp src/song_manager.cpp src/metadata.cpp src/usage_helper.cpp -o argvmain
+g++ -I. -Iheaders src/argvmain.cpp src/audio_utilities.cpp src/dependency.cpp src/url_utilities.cpp src/file_manager.cpp src/song_manager.cpp src/metadata.cpp src/usage_helper.cpp src/queue_manager.cpp -o main
 ./main <link_to_youtube_urlL> <audio_file_format>
 ```
 
