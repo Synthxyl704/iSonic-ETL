@@ -5,6 +5,7 @@
 #include <array>
 #include <memory>
 #include <sstream>
+#include <cstdint>
 
 #include "headers/audio_utilities.h"
 #include "headers/dependency.h"
@@ -13,22 +14,32 @@
 #include "headers/song_manager.h"
 #include "headers/metadata.h"
 #include "headers/usage_helper.h"
+#include "headers/queue_manager.h"
+#include "headers/audio_preview.h"
 
-// #include "audio_utilities.cpp"
-// #include "dependency.cpp"
-// #include "url_utilities.cpp"
-// #include "file_manager.cpp"
-// #include "song_manager.cpp"
-// #include "metadata.cpp"
-// #include "usage_helper.cpp"
+#define MAX_PRO_SEARCH_LIST_INT_SIZE 4
 
-using namespace std; // im sorry
+   #define RESET    "\033[0m"
+   #define YELLOW  "\033[33m"
+
+inline void showUserTheirOptions() {
+    std::cout << "\n[!_LOG_REMEMBER_THE_INDEXES_!]: What do you wish to do with these indexes?" << "\n\n";
+    std::cout << "[OPTIONS_LIST]" << "\n";
+    std::cout << "┌   1. Remove a specific song" <<"\n";
+    std::cout << "├   2. Remove multiple indexes" << "\n";
+    std::cout << "├   3. Show metadata" << "\n";
+    std::cout << "└   4. Transcode" << "\n";
+
+    std::cout << "\n[FLAG_INT_PROMPT]: Enter option integer: " ;
+}
+
+using namespace std;
 
 std::string execCommand(const std::string& cmd) {
     std::array<char, 4096> buffer;
     std::string result;
 
-    using PCloseFn = int (*)(FILE*); // tacit warning suppression
+    using PCloseFn = int (*)(FILE*);
     std::unique_ptr<FILE, PCloseFn> pipe(popen(cmd.c_str(), "r"), pclose);
 
     if (!pipe) {
@@ -46,9 +57,11 @@ std::vector<std::string> split(const std::string& str, char delimiter) {
     std::vector<std::string> parts;
     std::stringstream ss(str);
     std::string item;
+
     while (std::getline(ss, item, delimiter)) {
         parts.push_back(item);
     }
+
     return parts;
 }
 
@@ -58,39 +71,24 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    // =============== MAIN ARGV HANDLING ===============
-
-    // FEATS!!!
-    // -> | -smlist 
-    // -> | -rem 
-    // -> | -metamsc
-    // -> | -remul? (i wrote the f(x) for it, need name for first argument)
-
-    // -x_ver_i_wanna_add-
-    // -> | -transmux
-    // -> | -demux? 
-    // -> | -transcode
-
-    // TODO: change this later for argv[3+] integration somehow, parse tree?
-    //       make it a cli?
-    //       nvm its a feature now deal with it no parse tree no shit 
-    //       ftxui is too confusing
-
     string firstArg = argv[1];
 
-    // ./main <url> mp3
-    // friendship ended with mp3, opus is my best friend now
-
     signed int commandType = (-1);
-         if (firstArg == "-smlist")     { commandType = 0; }
-    else if (firstArg == "-rem")        { commandType = 1; }
-    else if (firstArg == "-remMul")     { commandType = 2; }
-    else if (firstArg == "-transcode")  { commandType = 3; }
-    else if (firstArg == "-metamsc")    { commandType = 4; }
-    else if (firstArg == "-help")       { commandType = 5; }
+         if (firstArg == "-smlist")     { commandType = 0;  }
+    else if (firstArg == "-rem")        { commandType = 1;  }
+    else if (firstArg == "-remMul")     { commandType = 2;  }
+    else if (firstArg == "-transcode")  { commandType = 3;  }
+    else if (firstArg == "-metamsc")    { commandType = 4;  }
+    else if (firstArg == "-help")       { commandType = 5;  }
     else if (firstArg == "-search")     { commandType = 6;  }
-    else if (firstArg.find("LFI_") != std::string::npos) 
-                                        { commandType = 7; }
+    else if (firstArg.find("LFI_") != std::string::npos)    
+                                        { commandType = 7;  }
+    else if (firstArg == "-prosearch")  { commandType = 8;  }
+    else if (firstArg == "-queue")      { commandType = 9;  }
+    else if (firstArg == "-batchfile")  { commandType = 10; }
+    else if (firstArg == "-batchstdin") { commandType = 11; }
+    else if (firstArg == "-preview")    { commandType = 12; }
+    else if (firstArg == "-play")       { commandType = 13; }
 
     switch (commandType) {
         case 0: // -smlist
@@ -138,6 +136,7 @@ int main(int argc, char **argv) {
             downloadPath = createOrGetDownloadFolder(downloadPath);
             
             if (downloadPath.empty()) {
+                std::cerr << "[FSYS_ACCESS_ERROR]: File access error" << std::endl;
                 return EXIT_FAILURE;
             }
 
@@ -166,43 +165,178 @@ int main(int argc, char **argv) {
 
         case 6: // -search
         {
-
-           // -search <insert_query_token_here>
-           // argv[2] = tokenQuery
-           // argv[3] = directory = downloadPath
-
            string downloadPath = (argc >= 4) ? argv[3] : "downloads";
            searchForSong(downloadPath, static_cast<std::string>(argv[2]));
 
            return EXIT_SUCCESS;
         }
 
-        case 7: // -LFI_t / -LFI_f 
+        case 7: // -LFI_t ... -LFI_[X]
         {
-             // if (argv[2] == NULL || !argv[2]) {
-            //     std::cerr << "\nFile/directory to analyse is not specified, specify in argv[2]\n";
-            //     return EXIT_SUCCESS;
-            // }
-
-            // std::string downloadPath = argv[2];
-            // string downloadPath = (argc >= 3) ? argv[2] : "";
-
-            // CHANGE THE "downloads" IN CASE ITS SET TO YOUR DIRECTORY
             string downloadPath = (argc >= 3) ? argv[2] : "downloads";
 
-            // if "t" is found, then detailed, else no
             bool detailed = (firstArg.find("t") != std::string::npos);
             listDirectoryContents(downloadPath, detailed);
 
             return EXIT_SUCCESS;
         }
 
-        default:
-            // n/a
-            break;
-    }
+        case 8: // -prosearch
+        {
+            std::cout << "[PROG_LOG]: Main junction command used: \n";
+            std::cout << std::string(15, '=');
+            std::cout << "\n\n";
+            
+            string downloadPath = (argc >= 4) ? argv[3] : "downloads";
+            searchForSong(downloadPath, argv[2]);
 
-    // =============== END OF ADDED MORE COMMAND HANDLING ===============
+            int32_t VOLITION_INT;
+
+            showUserTheirOptions();
+
+            std::cin >> VOLITION_INT;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+            if (VOLITION_INT > MAX_PRO_SEARCH_LIST_INT_SIZE || VOLITION_INT < (MAX_PRO_SEARCH_LIST_INT_SIZE - 3)) {
+                std::cerr << "\n[INPUT_LIST_INDEX_ERROR]: invalid integer in pro search listing options, retry recommended. \n";
+                std::exit(EXIT_FAILURE);
+            }
+
+            switch (VOLITION_INT) {
+                case 1: {
+                    removeSong(downloadPath);
+                    std::cout << "[LOG]: Completed, now exiting pro search.\n\n";
+                    return EXIT_SUCCESS;
+                }
+
+                case 2: {
+                    removeMultipleSongs(downloadPath);
+                    std::cout << "[LOG]: Exiting pro search.\n\n";
+                    return EXIT_SUCCESS;
+                }
+
+                case 3: {
+                    showSongMetadata(downloadPath);
+                    std::cout << "[LOG]: Now exiting pro search.\n\n";
+                    return EXIT_SUCCESS;
+                }
+
+                case 4: {
+                    transcodeSelectedFiles(downloadPath);
+                    std::cout << "[LOG]: Exiting pro search.\n\n";
+                    return EXIT_SUCCESS;
+                }
+
+                default: 
+                    std::cerr << "[???]: Something went... terribly wrong... how..." << "\n\n";
+                    std::exit(EXIT_FAILURE);
+                    break;
+            }
+        }
+        
+        case 9: // -queue
+        {
+            std::cout << "\n[QUEUE_MANAGER]: Starting queue management interface\n\n";
+            manageDownloadQueue();
+            return EXIT_SUCCESS;
+        }
+        
+        case 10: // -batchfile
+        {
+            if (argc < 3) {
+                std::cerr << "[BATCH_ERROR]: File path required\n";
+                std::cerr << "Usage: " << argv[0] << " -batchfile <urls_file> [format] [download_path]\n";
+                return EXIT_FAILURE;
+            }
+            
+            string urlsFile = argv[2];
+            string format = (argc >= 4) ? argv[3] : "opus";
+            string downloadPath = (argc >= 5) ? argv[4] : "";
+            downloadPath = createOrGetDownloadFolder(downloadPath);
+            
+            if (downloadPath.empty()) {
+                return EXIT_FAILURE;
+            }
+            
+            std::cout << "\n[BATCH_MODE]: Loading URLs from file: " << urlsFile << "\n";
+            
+            DownloadQueue queue;
+            queue.loadFromFile(urlsFile);
+            queue.displayQueue();
+            
+            char confirm;
+            std::cout << "\nStart batch download? (yY/nN): ";
+            std::cin >> confirm;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            
+            if (confirm == 'y' || confirm == 'Y') {
+                processBatchDownload(format, downloadPath);
+            } else {
+                std::cout << "[BATCH_CANCEL]: Batch download cancelled\n";
+            }
+            
+            return EXIT_SUCCESS;
+        }
+        
+        case 11: // -batchstdin
+        {
+            string format = (argc >= 3) ? argv[2] : "opus";
+            string downloadPath = (argc >= 4) ? argv[3] : "";
+            downloadPath = createOrGetDownloadFolder(downloadPath);
+            
+            if (downloadPath.empty()) {
+                return EXIT_FAILURE;
+            }
+            
+            DownloadQueue queue;
+            queue.loadFromStdin();
+            queue.displayQueue();
+            
+            char confirm;
+            std::cout << "\nStart batch download? (yY/nN): ";
+            std::cin >> confirm;
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            
+            if (confirm == 'y' || confirm == 'Y') {
+                processBatchDownload(format, downloadPath);
+            } else {
+                std::cout << "[BATCH_CANCEL]: Batch download cancelled\n";
+            }
+            
+            return EXIT_SUCCESS;
+        }
+        
+        case 12: // -preview
+        {
+            string downloadPath = (argc >= 3) ? argv[2] : "downloads";
+            
+            std::cout << "\n[PREVIEW_MODE]: Starting audio preview\n";
+            std::cout << "[PREVIEW_INFO]: Detecting available audio players...\n\n";
+            
+            string player = detectAvailablePlayer();
+            if (player.empty()) {
+                std::cerr << "[PREVIEW_ERROR]: No audio player found!\n";
+                std::cerr << "[PREVIEW_ERROR]: Please install one of: cmus, mpv, moc, mpg123\n";
+                return EXIT_FAILURE;
+            }
+            
+            std::cout << "[PREVIEW_DETECTED]: Using " << player << " for playback\n";
+            
+            previewDownloadedSongs(downloadPath);
+            return EXIT_SUCCESS;
+        }
+        
+        case 13: // -play
+        {
+            string downloadPath = (argc >= 3) ? argv[2] : "downloads";
+            
+            playSelectedSong(downloadPath);
+            return EXIT_SUCCESS;
+        }
+
+        default:
+        break;
+    }
 
     if (argc < 3 || argc > 4) {
         std::cerr << "\n((argc < 3 || argc > 4) || INVALID COMMAND: " << argv[1] <<  ")\n\n";
@@ -215,9 +349,7 @@ int main(int argc, char **argv) {
     const string format = argv[2];
     const string customFolder = (argc == 4) ? argv[3] : "";
 
-    // ============== ERROR conditionals ==============
-
-    if (url.length() > 0x200 /* 0x400 */) { // CHANGE IN CASE YOU SOMEHOW HAVE A LARGER LINK
+    if (url.length() > 0x200) {
         cout << "\n\n[URL_INT_ERROR]: too many characters in [URL], overflow protection | terminating program\n\n";
         return EXIT_FAILURE;
     }
@@ -238,9 +370,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    // const std::string commandForRedundancyCheck = argv[1]; // url     
-
-std::string metadataCmd = "yt-dlp --no-warnings --print \"%(title)s|%(artist)s|%(duration)s\" \"" + url + "\"";
+std::string metadataCmd = "yt-dlp --no-warnings --print \"%(title)s|%(artist,uploader,creator)s|%(duration)s\" \"" + url + "\"";
 std::string metadataOutput = execCommand(metadataCmd);
 
 std::istringstream metaStream(metadataOutput);
@@ -255,19 +385,17 @@ std::string duration = "[UNKNOWN]";
 
 if (metaFields.size() >= 3) {
     title = metaFields[0];
-    artist = (!metaFields[1].empty()) ? metaFields[1] : "[ERROR_WHILE_FETCHING_MDT]";
+    artist = (!metaFields[1].empty()) ? metaFields[1] : "[ERROR_WHILE_FETCHING_MDT_FOR_ARTIST]";
     duration = metaFields[2];
 } else {
-    std::cerr << "[WARNING]: PCould not extract complete metadata for URL.\n";
+    std::cerr << "[WARNING]: Could not extract complete metadata for URL.\n";
 }
 
 cout << "\n=== [TRACK METADATA] ===\n";
 cout << "Title   : " << title << "\n";
 cout << "Artist  : " << artist << "\n";
 cout << "Duration: " << duration << " seconds\n";
-cout << "========================\n";
-
-    // ============== END OF CHECKING THINGS ==============
+cout << std::string(26, '=') << "\n";
 
     string downloadPath = createOrGetDownloadFolder(customFolder);
     if (downloadPath.empty()) {
@@ -276,31 +404,28 @@ cout << "========================\n";
 
     isSongRedundant(downloadPath, title); 
 
-    // if it is a playlist?
     bool isPlaylist = isPlaylistURL(url);
     
     char actualCommand[0x800];
     if (isPlaylist) {
-
-        // playlist download command
         snprintf(actualCommand, sizeof(actualCommand),
             "yt-dlp --extract-audio --audio-format %s --output \"%s/%%(playlist_index)s - %%(title)s.%%(ext)s\" \"%s\"",
             format.c_str(), downloadPath.c_str(), url.c_str());
         
         cout << "\n[PLAYLIST URL DETECTED]\n";
+        cout << std::string(12, '=');
         cout << "Download URL: [" << url << "]\n";
         cout << "Audio format: [" << format << "]\n";
         cout << "Download folder: [" << downloadPath << "]\n";
         cout << "Files will be numbered by playlist order\n";
     } else {
-
-        // single track download command
         snprintf(actualCommand, sizeof(actualCommand),
             "yt-dlp --extract-audio --audio-format %s --output \"%s/%%(title)s.%%(ext)s\" \"%s\"",
             format.c_str(), downloadPath.c_str(), url.c_str()
         );
         
         cout << "\n[SINGLE TRACK MODE]\n";
+        cout << std::string(12, '='); 
         cout << "Download URL: [" << url << "]\n";
         cout << "Audio format: [" << format << "]\n";
         cout << "Download folder: [" << downloadPath << "]\n";
@@ -311,6 +436,21 @@ cout << "========================\n";
     int resultVal = system(actualCommand);
     if (resultVal == 0) {
         cout << "\n[SUCCESS]: Audio extraction completed in: " << downloadPath << "\n\n";
+        
+        // char previewChoice;
+        // cout << "[PREVIEW_PROMPT]: Would you like to preview the downloaded audio? (yY/nN): ";
+        // cin >> previewChoice;
+        // cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        
+        // if (previewChoice == 'y' || previewChoice == 'Y') {
+        //     string player = detectAvailablePlayer();
+        //     if (!player.empty()) {
+        //         // Find the most recently downloaded file
+        //         playSelectedSong(downloadPath);
+        //     } else {
+        //         cout << "[PREVIEW_INFO]: No audio player available. Install cmus, mpv, moc, or mpg123.\n";
+        //     }
+        // }
     } else {
         cout << "\n\n[Error]: Audio extraction failure | (exit code: " << resultVal << ")\n";
         cout << "Common issues:\n";
