@@ -6,6 +6,7 @@
 #include <memory>
 #include <sstream>
 #include <cstdint>
+#include <unordered_map>
 
 #include "headers/audio_utilities.h"
 #include "headers/dependency.h"
@@ -19,7 +20,7 @@
 
 #define MAX_PRO_SEARCH_LIST_INT_SIZE 4
 
-   #define RESET    "\033[0m"
+   #define  RESET  "\033[0m"
    #define YELLOW  "\033[33m"
 
 inline void showUserTheirOptions() {
@@ -35,7 +36,7 @@ inline void showUserTheirOptions() {
 
 using namespace std;
 
-std::string execCommand(const std::string& cmd) {
+std::string execCommand(const std::string &cmd) {
     std::array<char, 4096> buffer;
     std::string result;
 
@@ -53,7 +54,7 @@ std::string execCommand(const std::string& cmd) {
     return result;
 }
 
-std::vector<std::string> split(const std::string& str, char delimiter) {
+std::vector<std::string> split(const std::string &str, char delimiter) /* "|" */ {
     std::vector<std::string> parts;
     std::stringstream ss(str);
     std::string item;
@@ -83,25 +84,50 @@ enum class CommandType : int {
     Play       = 13
 };
 
-    CommandType getCommandType(const std::string &arg) {
-    if (arg == "-smlist")     {  return CommandType::Smlist;      }
-    if (arg == "-rem")        {  return CommandType::Rem;         }
-    if (arg == "-remMul")     {   return CommandType::RemMul;     }
-    if (arg == "-transcode")  {   return CommandType::Transcode;  }
-    if (arg == "-metamsc")    {   return CommandType::Metamsc;    }    
-    if (arg == "-help")       {   return CommandType::Help;       }
-    if (arg == "-search")     {   return CommandType::Search;     }
-    if (arg.find("LFI_")   
-        != std::string::npos)                                
-                              {   return CommandType::Lfi;        }
-    if (arg == "-prosearch")  {   return CommandType::Prosearch;  }
-    if (arg == "-queue")      {   return CommandType::Queue;      }
-    if (arg == "-batchfile")  {   return CommandType::Batchfile;  }
-    if (arg == "-batchstdin") {   return CommandType::Batchstdin; }
-    if (arg == "-preview")    {   return CommandType::Preview;    }
-    if (arg == "-play")       {   return CommandType::Play;       }
+CommandType getCommandType(const std::string &arg) {
+    // if (arg == "-smlist")     {   return CommandType::Smlist;     }
+    // if (arg == "-rem")        {   return CommandType::Rem;        }
+    // if (arg == "-remMul")     {   return CommandType::RemMul;     }
+    // if (arg == "-transcode")  {   return CommandType::Transcode;  }
+    // if (arg == "-metamsc")    {   return CommandType::Metamsc;    }    
+    // if (arg == "-help")       {   return CommandType::Help;       }
+    // if (arg == "-search")     {   return CommandType::Search;     }
+    // if (arg.find("LFI_")   
+    //     != std::string::npos)                                
+    //                           {   return CommandType::Lfi;        }
+    // if (arg == "-prosearch")  {   return CommandType::Prosearch;  }
+    // if (arg == "-queue")      {   return CommandType::Queue;      }
+    // if (arg == "-batchfile")  {   return CommandType::Batchfile;  }
+    // if (arg == "-batchstdin") {   return CommandType::Batchstdin; }
+    // if (arg == "-preview")    {   return CommandType::Preview;    }
+    // if (arg == "-play")       {   return CommandType::Play;       }
 
-    return CommandType::Invalid;
+    // this should be faster with O(1) time
+    // using a hash map, it will contain my commands as the keys
+    // should reduce my linear search TC of O(n) -> O(1)
+    static const std::unordered_map<std::string, CommandType> cmdMap = {
+        { "-smlist",     CommandType::Smlist        },
+        { "-rem",        CommandType::Rem           },
+        { "-remMul",     CommandType::RemMul        },
+        { "-transcode",  CommandType::Transcode     },
+        { "-metamsc",    CommandType::Metamsc       },
+        { "-help",       CommandType::Help          },
+        { "-search",     CommandType::Search        },
+        { "-prosearch",  CommandType::Prosearch     },
+        { "-queue",      CommandType::Queue         },
+        { "-batchfile",  CommandType::Batchfile     },
+        { "-batchstdin", CommandType::Batchstdin    },
+        { "-preview",    CommandType::Preview       },
+        { "-play",       CommandType::Play          }
+    }; 
+
+    if (arg.find("LFI_") != std::string::npos) { return CommandType::Lfi; }
+
+    // std::unordered_map<std::string, CommandType>::const_iterator itr {cmdMap.find(arg)};
+    auto itr {cmdMap.find(arg)};
+    if (itr != cmdMap.end()) {
+        return (itr->second); // returns mapped cmdtype
+    } /* else */ return (CommandType::Invalid);
 }
 
 int main(int argc, char **argv) {
