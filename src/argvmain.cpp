@@ -106,20 +106,20 @@ CommandType getCommandType(const std::string &arg) {
     // using a hash map, it will contain my commands as the keys
     // should reduce my linear search TC of O(n) -> O(1)
     static const std::unordered_map<std::string, CommandType> cmdMap = {
-        { "-smlist",     CommandType::Smlist        },
-        { "-rem",        CommandType::Rem           },
-        { "-remMul",     CommandType::RemMul        },
-        { "-transcode",  CommandType::Transcode     },
-        { "-metamsc",    CommandType::Metamsc       },
-        { "-help",       CommandType::Help          },
-        { "-search",     CommandType::Search        },
-        { "-prosearch",  CommandType::Prosearch     },
-        { "-queue",      CommandType::Queue         },
-        { "-batchfile",  CommandType::Batchfile     },
-        { "-batchstdin", CommandType::Batchstdin    },
-        { "-preview",    CommandType::Preview       },
-        { "-play",       CommandType::Play          }
-    }; 
+        {     "-smlist",     CommandType::Smlist        },
+        {     "-rem",        CommandType::Rem           },
+        {     "-remMul",     CommandType::RemMul        },
+        {     "-transcode",  CommandType::Transcode     },
+        {     "-metamsc",    CommandType::Metamsc       },
+        {     "-help",       CommandType::Help          },
+        {     "-search",     CommandType::Search        },
+        {     "-prosearch",  CommandType::Prosearch     },
+        {     "-queue",      CommandType::Queue         },
+        {     "-batchfile",  CommandType::Batchfile     },
+        {     "-batchstdin", CommandType::Batchstdin    },
+        {     "-preview",    CommandType::Preview       },
+        {     "-play",       CommandType::Play          }
+    };
 
     if (arg.find("LFI_") != std::string::npos) { return CommandType::Lfi; }
 
@@ -387,8 +387,7 @@ int main(int argc, char **argv) {
         }
 
         default:
-            std::cerr << "[UNKNOWN_COMMAND]: Invalid command argument\n";
-            return EXIT_FAILURE;
+            std::cout << "[STARTING_SONG_INSTALL]\n\n";
 }
 
     if (argc < 3 || argc > 4) {
